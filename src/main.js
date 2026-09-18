@@ -318,12 +318,17 @@ function exportExcel() {
     ws['!cols']=[{wch:5},{wch:38},{wch:15},{wch:34},{wch:30},{wch:18},{wch:16}];ws['!autofilter']={ref:`A1:G${data.length+1}`};
     XLSX.utils.book_append_sheet(wb,ws,'Список');XLSX.utils.book_append_sheet(wb,sum,'Расчет ставок');
   }
+  let specialtyData;
   if(state.specialtyRows.length){
-    const specialtyData=state.specialtyRows.map(r=>({'Факультет':r.faculty,'Специальность':r.specialty,'Прошли — бюджет':r.passedBudget,'Прошли — контракт':r.passedContract,'Прошли — СНГ':r.passedCis,'Прошли — ИГ':r.passedForeign,'Прошли — всего':r.passedTotal,'Подали — бюджет':r.appliedBudget,'Подали — контракт':r.appliedContract,'Подали — СНГ':r.appliedCis,'Подали — ИГ':r.appliedForeign,'Подали — всего':r.appliedTotal}));
-    const specialties=XLSX.utils.json_to_sheet(specialtyData);
-    specialties['!cols']=[{wch:18},{wch:42},...Array.from({length:10},()=>({wch:18}))];specialties['!autofilter']={ref:`A1:L${specialtyData.length+1}`};
-    XLSX.utils.book_append_sheet(wb,specialties,'По специальности');
+    specialtyData=state.specialtyRows.map(r=>({'Факультет':r.faculty,'Специальность':r.specialty,'Прошли — бюджет':r.passedBudget,'Прошли — контракт':r.passedContract,'Прошли — СНГ':r.passedCis,'Прошли — ИГ':r.passedForeign,'Прошли — всего':r.passedTotal,'Подали — бюджет':r.appliedBudget,'Подали — контракт':r.appliedContract,'Подали — СНГ':r.appliedCis,'Подали — ИГ':r.appliedForeign,'Подали — всего':r.appliedTotal}));
+  }else{
+    const groups=new Map();
+    for(const row of selected){const key=`${row.department}|${row.specialty}`;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);}
+    specialtyData=[...groups.values()].map(rows=>{const budget=uniquePeople(rows.filter(r=>r.funding==='budget')),contract=uniquePeople(rows.filter(r=>r.funding==='contract')),cis=uniquePeople(rows.filter(r=>r.funding==='cis')),paid=uniquePeople(rows.filter(r=>r.funding==='contract'||r.funding==='cis'));return {'Кафедра':rows[0].department,'Специальность':rows[0].specialty,'Бюджет':budget,'Контракт':contract,'СНГ':cis,'Всего ординаторов':uniquePeople(rows),'Ставка — бюджет':budget/4,'Ставка — контракт + СНГ':paid/4,'Всего ставок':(budget+paid)/4};}).sort((a,b)=>a['Специальность'].localeCompare(b['Специальность'],'ru'));
   }
+  const specialties=XLSX.utils.json_to_sheet(specialtyData);
+  specialties['!cols']=[{wch:28},{wch:42},...Array.from({length:10},()=>({wch:20}))];specialties['!autofilter']={ref:`A1:${state.specialtyRows.length?'L':'I'}${specialtyData.length+1}`};
+  XLSX.utils.book_append_sheet(wb,specialties,'По специальности');
   XLSX.writeFile(wb,`Штатное_расписание_2026-2027_${new Date().toISOString().slice(0,10)}.xlsx`);showToast('Штатное расписание сформировано');
 }
 
