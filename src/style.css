@@ -26,6 +26,9 @@ h1 { font-family: Prata, Georgia, serif; font-weight: 400; font-size: 34px; marg
 .card { background: #fff; border: 1px solid #e5e4de; border-radius: 14px; padding: 18px 20px; }
 .card .label { color: #7a8683; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }.card .value { margin-top: 9px; font-size: 34px; font-weight: 800; color: #173b34; }.card .hint { margin-top: 3px; color: #a1aaa7; font-size: 11px; }
 .rate-card { display:flex; align-items:center; justify-content:space-between; gap:20px; }.rate-card .count { margin-top:8px; font-size:17px; font-weight:800; color:#263d37; }.rate { min-width:126px; padding-left:20px; border-left:1px solid #e4e7e2; display:grid; }.rate span { color:#7a8683; text-transform:uppercase; letter-spacing:.06em; font-size:9px; font-weight:800; }.rate strong { color:#173b34; font-size:31px; line-height:1.15; }.rate small { color:#909a97; font-size:10px; }.budget-card { border-top:3px solid #4f9879; }.contract-card { border-top:3px solid #d8a449; }
+.pps-cards { grid-template-columns: repeat(4, minmax(170px,1fr)); }
+.section-title { margin: 26px 0 10px; color:#173b34; font-size:17px; }
+.summary-table { border-radius:14px; }
 .toolbar { background: white; border: 1px solid #e4e4de; border-bottom: 0; border-radius: 14px 14px 0 0; padding: 14px; display: flex; gap: 10px; align-items: center; }
 .search { flex: 1; position: relative; }.search input { width: 100%; padding: 10px 12px 10px 38px; border: 1px solid #dfe2dd; border-radius: 9px; outline: none; }.search::before { content:'⌕'; position:absolute; left:14px; top:7px; font-size:22px; color:#83908c; }
 .toolbar select { padding: 10px 32px 10px 11px; border: 1px solid #dfe2dd; border-radius: 9px; background: white; min-width: 160px; }
