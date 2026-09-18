@@ -64,7 +64,7 @@ function uniquePeople(rows) {
 }
 function totals(rows = scopeRows()) {
   const budget = uniquePeople(rows.filter(row => row.funding === 'budget'));
-  const contract = uniquePeople(rows.filter(row => row.funding === 'contract' || row.funding === 'cis'));
+  const contract = uniquePeople(rows.filter(row => row.funding === 'contract'));
   return {
     people: uniquePeople(rows),
     budget,
@@ -97,7 +97,7 @@ function studentsView() {
     <div class="actions"><label class="btn" for="fileInput">${importLabel}</label><input class="file-input" id="fileInput" type="file" accept=".xlsx,.xls" multiple><button class="btn" id="exportBtn">Выгрузить Excel</button>${state.rows.length?'<button class="btn danger" id="clearBtn">Очистить всё</button>':''}<button class="btn primary" id="addBtn">+ Добавить человека</button></div></header>
     <section class="cards staffing-cards"><div class="card total-card"><div class="label">Общий итог</div><div class="value">${t.people}</div><div class="hint">ординаторов в выбранном списке</div></div>
     <div class="card rate-card budget-card"><div><div class="label">Бюджет</div><div class="count">${t.budget} человек</div></div><div class="rate"><span>Ставка</span><strong>${fmtRate(t.budgetRate)}</strong><small>${t.budget} ÷ 4</small></div></div>
-    <div class="card rate-card contract-card"><div><div class="label">Контракт + СНГ</div><div class="count">${t.contract} человек</div></div><div class="rate"><span>Ставка</span><strong>${fmtRate(t.contractRate)}</strong><small>${t.contract} ÷ 4</small></div></div></section>
+    <div class="card rate-card contract-card"><div><div class="label">Контракт</div><div class="count">${t.contract} человек</div></div><div class="rate"><span>Ставка</span><strong>${fmtRate(t.contractRate)}</strong><small>${t.contract} ÷ 4</small></div></div></section>
     <section class="toolbar"><div class="search"><input id="search" placeholder="Поиск по ФИО, кафедре, специальности…" value="${esc(state.search)}"></div>
     <select id="departmentFilter"><option value="all">Все кафедры</option>${departments.map(d=>`<option ${state.department===d?'selected':''}>${esc(d)}</option>`).join('')}</select>
     <select id="yearFilter"><option value="all">Все годы</option>${years.map(y=>`<option ${state.year===y?'selected':''}>${esc(y)}</option>`).join('')}</select>
@@ -308,11 +308,11 @@ function exportExcel() {
       ['Фильтр года',state.year==='all'?'Все годы':state.year],
       ['Общий итог',t.people],
       ['Бюджет',t.budget],
-      ['Контракт + СНГ',t.contract],
+      ['Контракт',t.contract],
       [],
       ['Источник','Количество человек','Формула','Итоговая ставка'],
       ['Бюджет',t.budget,`${t.budget} / 4`,{t:'n',f:'B9/4',v:t.budgetRate}],
-      ['Контракт + СНГ',t.contract,`${t.contract} / 4`,{t:'n',f:'B10/4',v:t.contractRate}],
+      ['Контракт',t.contract,`${t.contract} / 4`,{t:'n',f:'B10/4',v:t.contractRate}],
     ];
     const ws=XLSX.utils.json_to_sheet(data),sum=XLSX.utils.aoa_to_sheet(summary);
     ws['!cols']=[{wch:5},{wch:38},{wch:15},{wch:34},{wch:30},{wch:18},{wch:16}];ws['!autofilter']={ref:`A1:G${data.length+1}`};
@@ -324,7 +324,12 @@ function exportExcel() {
   }else{
     const groups=new Map();
     for(const row of selected){const key=`${row.department}|${row.specialty}`;if(!groups.has(key))groups.set(key,[]);groups.get(key).push(row);}
-    specialtyData=[...groups.values()].map(rows=>{const budget=uniquePeople(rows.filter(r=>r.funding==='budget')),contract=uniquePeople(rows.filter(r=>r.funding==='contract')),cis=uniquePeople(rows.filter(r=>r.funding==='cis')),paid=uniquePeople(rows.filter(r=>r.funding==='contract'||r.funding==='cis'));return {'Кафедра':rows[0].department,'Специальность':rows[0].specialty,'Бюджет':budget,'Контракт':contract,'СНГ':cis,'Всего ординаторов':uniquePeople(rows),'Ставка — бюджет':budget/4,'Ставка — контракт + СНГ':paid/4,'Всего ставок':(budget+paid)/4};}).sort((a,b)=>a['Специальность'].localeCompare(b['Специальность'],'ru'));
+    specialtyData=[...groups.values()].map(rows=>{
+      const budget=uniquePeople(rows.filter(r=>r.funding==='budget'));
+      const contract=uniquePeople(rows.filter(r=>r.funding==='contract'));
+      const cis=uniquePeople(rows.filter(r=>r.funding==='cis'));
+      return {'Кафедра':rows[0].department,'Специальность':rows[0].specialty,'Бюджет':budget,'Контракт':contract,'СНГ':cis,'Всего ординаторов':uniquePeople(rows),'Ставка — бюджет':budget/4,'Ставка — контракт':contract/4,'Всего ставок':(budget+contract)/4};
+    }).sort((a,b)=>a['Специальность'].localeCompare(b['Специальность'],'ru'));
   }
   const specialties=XLSX.utils.json_to_sheet(specialtyData);
   specialties['!cols']=[{wch:28},{wch:42},...Array.from({length:10},()=>({wch:20}))];specialties['!autofilter']={ref:`A1:${state.specialtyRows.length?'L':'I'}${specialtyData.length+1}`};
