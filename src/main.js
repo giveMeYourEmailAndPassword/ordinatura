@@ -3,6 +3,7 @@ import './style.css';
 
 const STORAGE_KEY = 'kgma-staff-allocations-v1';
 const PPS_STORAGE_KEY = 'kgma-pps-allocations-v1';
+const SPECIALTY_STORAGE_KEY = 'kgma-specialty-report-v1';
 const FUNDING = { budget: 'Бюджет', contract: 'Контракт', cis: 'СНГ' };
 const state = {
   rows: loadRows(),
@@ -12,6 +13,7 @@ const state = {
   year: 'all',
   stage: 'students',
   ppsRows: loadPpsRows(),
+  specialtyRows: loadSpecialtyRows(),
   editingId: null,
 };
 
@@ -25,7 +27,12 @@ function loadPpsRows() {
   try { return JSON.parse(localStorage.getItem(PPS_STORAGE_KEY)) || []; }
   catch { return []; }
 }
+function loadSpecialtyRows() {
+  try { return JSON.parse(localStorage.getItem(SPECIALTY_STORAGE_KEY)) || []; }
+  catch { return []; }
+}
 function savePpsRows() { localStorage.setItem(PPS_STORAGE_KEY, JSON.stringify(state.ppsRows)); }
+function saveSpecialtyRows() { localStorage.setItem(SPECIALTY_STORAGE_KEY, JSON.stringify(state.specialtyRows)); }
 function saveRows() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.rows)); }
 function uid() { return crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`; }
 function clean(value) { return String(value ?? '').replace(/\s+/g, ' ').trim(); }
@@ -75,6 +82,12 @@ function ppsGroups() {
   for(const row of state.ppsRows){const current=groups.get(row.position)||{position:row.position,people:0,budget:0,contract:0,total:0};current.people++;current.budget+=numeric(row.budgetRate);current.contract+=numeric(row.contractRate);current.total+=numeric(row.totalRate);groups.set(row.position,current);}
   return [...groups.values()].sort((a,b)=>a.position.localeCompare(b.position,'ru'));
 }
+function specialtySection() {
+  const rows=state.specialtyRows;
+  return `<section class="specialty-section"><div class="section-head"><div><h2 class="section-title">По специальности</h2><p class="subtitle">Приём документов: прошли первый тур и подали документы</p></div><div class="actions"><label class="btn" for="specialtyFileInput">${rows.length?'Заменить отчёт':'Импортировать отчёт'}</label><input class="file-input" id="specialtyFileInput" type="file" accept=".xlsx,.xls">${rows.length?'<button class="btn danger" id="clearSpecialtyBtn">Очистить отчёт</button>':''}</div></div>
+  <div class="table-wrap specialty-table">${rows.length?`<table><thead><tr><th>Факультет</th><th>Специальность</th><th>Прошли: бюджет</th><th>Прошли: контракт</th><th>Прошли: СНГ</th><th>Прошли: ИГ</th><th>Прошли: всего</th><th>Подали: бюджет</th><th>Подали: контракт</th><th>Подали: СНГ</th><th>Подали: ИГ</th><th>Подали: всего</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.faculty)}</td><td class="person">${esc(r.specialty)}</td><td class="number">${r.passedBudget}</td><td class="number">${r.passedContract}</td><td class="number">${r.passedCis}</td><td class="number">${r.passedForeign}</td><td class="number">${r.passedTotal}</td><td class="number">${r.appliedBudget}</td><td class="number">${r.appliedContract}</td><td class="number">${r.appliedCis}</td><td class="number">${r.appliedForeign}</td><td class="number">${r.appliedTotal}</td></tr>`).join('')}</tbody></table>`:`<div class="empty"><strong>Отчёт по специальностям не загружен</strong>Загрузите Excel «Отчёт по специальностям ПРИЕМ».</div>`}</div></section>`;
+}
+
 function studentsView() {
   const rows=filteredRows(),t=totals();
   const departments=[...new Set(state.rows.map(r=>r.department).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'ru'));
@@ -89,7 +102,7 @@ function studentsView() {
     <select id="departmentFilter"><option value="all">Все кафедры</option>${departments.map(d=>`<option ${state.department===d?'selected':''}>${esc(d)}</option>`).join('')}</select>
     <select id="yearFilter"><option value="all">Все годы</option>${years.map(y=>`<option ${state.year===y?'selected':''}>${esc(y)}</option>`).join('')}</select>
     <select id="fundingFilter"><option value="all">Все источники</option>${Object.entries(FUNDING).map(([k,v])=>`<option value="${k}" ${state.funding===k?'selected':''}>${v}</option>`).join('')}</select></section>
-    <div class="table-wrap">${rows.length?`<table><thead><tr><th>№</th><th>ФИО</th><th>Год</th><th>Специальность</th><th>Кафедра</th><th>Источник</th><th>Телефон</th><th></th></tr></thead><tbody>${rows.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`:`<div class="empty"><strong>Записей пока нет</strong>Загрузите Excel со списком ординаторов.</div>`}</div>`;
+    <div class="table-wrap">${rows.length?`<table><thead><tr><th>№</th><th>ФИО</th><th>Год</th><th>Специальность</th><th>Кафедра</th><th>Источник</th><th>Телефон</th><th></th></tr></thead><tbody>${rows.map((r,i)=>rowHtml(r,i)).join('')}</tbody></table>`:`<div class="empty"><strong>Записей пока нет</strong>Загрузите Excel со списком ординаторов.</div>`}</div>${specialtySection()}`;
 }
 function ppsView() {
   const t=ppsTotals(),groups=ppsGroups();
@@ -122,6 +135,8 @@ function bind() {
   document.querySelector('#addBtn').onclick=()=>openForm();
   document.querySelector('#fileInput').onchange=importFiles;
   document.querySelector('#exportBtn').onclick=exportExcel;
+  document.querySelector('#specialtyFileInput').onchange=importSpecialtyFile;
+  if(document.querySelector('#clearSpecialtyBtn'))document.querySelector('#clearSpecialtyBtn').onclick=clearSpecialty;
   if(document.querySelector('#clearBtn'))document.querySelector('#clearBtn').onclick=clearAll;
   document.querySelector('#search').oninput=e=>{state.search=e.target.value;render();document.querySelector('#search').focus();};
   document.querySelector('#fundingFilter').onchange=e=>{state.funding=e.target.value;render();};
@@ -134,10 +149,15 @@ function clearPps() {
   if(!confirm('Очистить импортированные данные ППС? Это действие нельзя отменить.'))return;
   localStorage.removeItem(PPS_STORAGE_KEY);state.ppsRows=[];render();showToast('Данные ППС очищены');
 }
+function clearSpecialty() {
+  if(!confirm('Очистить импортированный отчёт по специальностям?'))return;
+  localStorage.removeItem(SPECIALTY_STORAGE_KEY);state.specialtyRows=[];render();showToast('Отчёт по специальностям очищен');
+}
 function clearAll() {
   if(!confirm('Очистить все импортированные данные и внесённые изменения? Это действие нельзя отменить.'))return;
   localStorage.removeItem(STORAGE_KEY);
-  state.rows=[]; state.search=''; state.department='all'; state.funding='all'; state.year='all';
+  localStorage.removeItem(SPECIALTY_STORAGE_KEY);
+  state.rows=[];state.specialtyRows=[];state.search='';state.department='all';state.funding='all';state.year='all';
   render(); showToast('Все данные очищены');
 }
 
@@ -171,6 +191,34 @@ async function importPpsFile(event) {
   state.ppsRows=rows;savePpsRows();render();
   showToast(`ППС: загружено ${rows.length} сотрудников, ${fmtRate(ppsTotals().all)} ставок ординатуры`);
   event.target.value='';
+}
+async function importSpecialtyFile(event) {
+  const file=event.target.files[0];if(!file)return;
+  const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'});
+  let rows=[];
+  for(const sheetName of workbook.SheetNames){rows=parseSpecialtySheet(workbook.Sheets[sheetName]);if(rows.length)break;}
+  if(!rows.length){showToast('Раздел ординатуры по специальностям не найден');event.target.value='';return;}
+  state.specialtyRows=rows;saveSpecialtyRows();render();showToast(`По специальностям: загружено ${rows.length} строк`);
+  event.target.value='';
+}
+function parseSpecialtySheet(sheet) {
+  const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
+  if(!matrix.slice(0,4).flat().some(cell=>/прием документов фпмо/i.test(clean(cell))))return [];
+  const internshipTotal=matrix.findIndex(row=>row.some(cell=>/^итого интернатура:?$/i.test(clean(cell))));
+  if(internshipTotal<0)return [];
+  const output=[];let faculty='';
+  for(let i=internshipTotal+1;i<matrix.length;i++){
+    const row=matrix[i],specialty=clean(row[1]);
+    if(/^всего:$/i.test(specialty))break;
+    if(!specialty||/^итого/i.test(specialty))continue;
+    const values=row.slice(2,12).map(numeric);
+    const numbered=/^\d+$/.test(clean(row[0]));
+    if(!numbered&&values.every(value=>value===0)){faculty=specialty;continue;}
+    const passedTotal=clean(row[6])?values[4]:values.slice(0,4).reduce((sum,value)=>sum+value,0);
+    const appliedTotal=clean(row[11])?values[9]:values.slice(5,9).reduce((sum,value)=>sum+value,0);
+    output.push({faculty,specialty,passedBudget:values[0],passedContract:values[1],passedCis:values[2],passedForeign:values[3],passedTotal,appliedBudget:values[5],appliedContract:values[6],appliedCis:values[7],appliedForeign:values[8],appliedTotal});
+  }
+  return output;
 }
 function parsePpsSheet(sheet) {
   const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
@@ -248,26 +296,35 @@ function parseSheet(sheet,fileName,sheetName) {
 }
 function exportExcel() {
   const selected=scopeRows();
-  if(!selected.length){showToast('Нет данных для выгрузки');return;}
-  const t=totals(selected);
-  const ordered=[...selected].sort((a,b)=>a.department.localeCompare(b.department,'ru')||a.name.localeCompare(b.name,'ru'));
-  const data=ordered.map((r,i)=>({'№':i+1,'Фамилия, имя':r.name,'Год обучения':r.studyYear||'Не определён','Кафедра':r.department,'Специальность':r.specialty,'Источник':FUNDING[r.funding]||'','Телефон':r.phone}));
-  const summary=[
-    ['РАСЧЕТ ШТАТНЫХ СТАВОК · 2026–2027 УЧЕБНЫЙ ГОД'],
-    ['Фильтр кафедры',state.department==='all'?'Все кафедры':state.department],
-    ['Фильтр года',state.year==='all'?'Все годы':state.year],
-    ['Общий итог',t.people],
-    ['Бюджет',t.budget],
-    ['Контракт + СНГ',t.contract],
-    [],
-    ['Источник','Количество человек','Формула','Итоговая ставка'],
-    ['Бюджет',t.budget,`${t.budget} / 4`,{t:'n',f:'B9/4',v:t.budgetRate}],
-    ['Контракт + СНГ',t.contract,`${t.contract} / 4`,{t:'n',f:'B10/4',v:t.contractRate}],
-  ];
-  const wb=XLSX.utils.book_new(), ws=XLSX.utils.json_to_sheet(data), sum=XLSX.utils.aoa_to_sheet(summary);
-  ws['!cols']=[{wch:5},{wch:38},{wch:15},{wch:34},{wch:30},{wch:18},{wch:16}]; ws['!autofilter']={ref:`A1:G${data.length+1}`};
-  XLSX.utils.book_append_sheet(wb,ws,'Список'); XLSX.utils.book_append_sheet(wb,sum,'Расчет ставок');
-  XLSX.writeFile(wb,`Штатное_расписание_2026-2027_${new Date().toISOString().slice(0,10)}.xlsx`); showToast('Штатное расписание сформировано');
+  if(!selected.length&&!state.specialtyRows.length){showToast('Нет данных для выгрузки');return;}
+  const wb=XLSX.utils.book_new();
+  if(selected.length){
+    const t=totals(selected);
+    const ordered=[...selected].sort((a,b)=>a.department.localeCompare(b.department,'ru')||a.name.localeCompare(b.name,'ru'));
+    const data=ordered.map((r,i)=>({'№':i+1,'Фамилия, имя':r.name,'Год обучения':r.studyYear||'Не определён','Кафедра':r.department,'Специальность':r.specialty,'Источник':FUNDING[r.funding]||'','Телефон':r.phone}));
+    const summary=[
+      ['РАСЧЕТ ШТАТНЫХ СТАВОК · 2026–2027 УЧЕБНЫЙ ГОД'],
+      ['Фильтр кафедры',state.department==='all'?'Все кафедры':state.department],
+      ['Фильтр года',state.year==='all'?'Все годы':state.year],
+      ['Общий итог',t.people],
+      ['Бюджет',t.budget],
+      ['Контракт + СНГ',t.contract],
+      [],
+      ['Источник','Количество человек','Формула','Итоговая ставка'],
+      ['Бюджет',t.budget,`${t.budget} / 4`,{t:'n',f:'B9/4',v:t.budgetRate}],
+      ['Контракт + СНГ',t.contract,`${t.contract} / 4`,{t:'n',f:'B10/4',v:t.contractRate}],
+    ];
+    const ws=XLSX.utils.json_to_sheet(data),sum=XLSX.utils.aoa_to_sheet(summary);
+    ws['!cols']=[{wch:5},{wch:38},{wch:15},{wch:34},{wch:30},{wch:18},{wch:16}];ws['!autofilter']={ref:`A1:G${data.length+1}`};
+    XLSX.utils.book_append_sheet(wb,ws,'Список');XLSX.utils.book_append_sheet(wb,sum,'Расчет ставок');
+  }
+  if(state.specialtyRows.length){
+    const specialtyData=state.specialtyRows.map(r=>({'Факультет':r.faculty,'Специальность':r.specialty,'Прошли — бюджет':r.passedBudget,'Прошли — контракт':r.passedContract,'Прошли — СНГ':r.passedCis,'Прошли — ИГ':r.passedForeign,'Прошли — всего':r.passedTotal,'Подали — бюджет':r.appliedBudget,'Подали — контракт':r.appliedContract,'Подали — СНГ':r.appliedCis,'Подали — ИГ':r.appliedForeign,'Подали — всего':r.appliedTotal}));
+    const specialties=XLSX.utils.json_to_sheet(specialtyData);
+    specialties['!cols']=[{wch:18},{wch:42},...Array.from({length:10},()=>({wch:18}))];specialties['!autofilter']={ref:`A1:L${specialtyData.length+1}`};
+    XLSX.utils.book_append_sheet(wb,specialties,'По специальности');
+  }
+  XLSX.writeFile(wb,`Штатное_расписание_2026-2027_${new Date().toISOString().slice(0,10)}.xlsx`);showToast('Штатное расписание сформировано');
 }
 
 render();
