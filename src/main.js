@@ -95,12 +95,12 @@ function ppsView() {
   const t=ppsTotals(),groups=ppsGroups();
   return `<header class="topbar"><div><h1>Формирование ППС</h1><p class="subtitle">Этап 2 · только ставки ординатуры, без интернатуры</p></div>
     <div class="actions"><label class="btn primary" for="ppsFileInput">${state.ppsRows.length?'Заменить Excel ППС':'Импортировать Excel ППС'}</label><input class="file-input" id="ppsFileInput" type="file" accept=".xlsx,.xls">${state.ppsRows.length?'<button class="btn danger" id="clearPpsBtn">Очистить ППС</button>':''}</div></header>
-    <section class="cards pps-cards"><div class="card"><div class="label">Сотрудников ППС</div><div class="value">${t.people}</div><div class="hint">со ставкой ординатуры</div></div>
+    <section class="cards pps-cards"><div class="card"><div class="label">Кафедры ППС</div><div class="value">${t.people}</div><div class="hint">со ставкой ординатуры</div></div>
     <div class="card budget-card"><div class="label">Бюджет ординатуры</div><div class="value">${fmtRate(t.budget)}</div><div class="hint">ставок</div></div>
-    <div class="card contract-card"><div class="label">Контракт ординатуры</div><div class="value">${fmtRate(t.contract)}</div><div class="hint">ставок</div></div>
-    <div class="card"><div class="label">Всего по ординатуре</div><div class="value">${fmtRate(t.all)}</div><div class="hint">бюджет + контракт</div></div></section>
-    <h2 class="section-title">Ставки по должностям</h2><div class="table-wrap summary-table">${groups.length?`<table><thead><tr><th>Должность</th><th>Сотрудников</th><th>Бюджет</th><th>Контракт</th><th>Всего ставок</th></tr></thead><tbody>${groups.map(g=>`<tr><td class="person">${esc(g.position)}</td><td>${g.people}</td><td class="number">${fmtRate(g.budget)}</td><td class="number">${fmtRate(g.contract)}</td><td class="number">${fmtRate(g.total)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty"><strong>Данные ППС не загружены</strong>Импортируйте штатное расписание кафедры.</div>`}</div>
-    ${state.ppsRows.length?`<h2 class="section-title">Сотрудники ППС</h2><div class="table-wrap"><table><thead><tr><th>№</th><th>ФИО</th><th>Должность</th><th>Бюджет ординатуры</th><th>Контракт ординатуры</th><th>Всего</th></tr></thead><tbody>${state.ppsRows.map((r,i)=>`<tr><td class="muted">${i+1}</td><td class="person">${esc(r.name)}</td><td>${esc(r.position)}</td><td class="number">${fmtRate(r.budgetRate)}</td><td class="number">${fmtRate(r.contractRate)}</td><td class="number">${fmtRate(r.totalRate)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+    <div class="card contract-card"><div class="label">Контракт / ИГ ординатуры</div><div class="value">${fmtRate(t.contract)}</div><div class="hint">ставок</div></div>
+    <div class="card"><div class="label">Всего по ординатуре</div><div class="value">${fmtRate(t.all)}</div><div class="hint">бюджет + контракт / ИГ</div></div></section>
+    <h2 class="section-title">Ставки по должностям</h2><div class="table-wrap summary-table">${groups.length?`<table><thead><tr><th>Должность</th><th>Сотрудников</th><th>Бюджет</th><th>Контракт / ИГ</th><th>Всего ставок</th></tr></thead><tbody>${groups.map(g=>`<tr><td class="person">${esc(g.position)}</td><td>${g.people}</td><td class="number">${fmtRate(g.budget)}</td><td class="number">${fmtRate(g.contract)}</td><td class="number">${fmtRate(g.total)}</td></tr>`).join('')}</tbody></table>`:`<div class="empty"><strong>Данные ППС не загружены</strong>Импортируйте штатное расписание кафедры.</div>`}</div>
+    ${state.ppsRows.length?`<h2 class="section-title">Сотрудники ППС</h2><div class="table-wrap"><table><thead><tr><th>№</th><th>ФИО</th><th>Должность</th><th>Бюджет ординатуры</th><th>Контракт / ИГ ординатуры</th><th>Всего</th></tr></thead><tbody>${state.ppsRows.map((r,i)=>`<tr><td class="muted">${i+1}</td><td class="person">${esc(r.name)}</td><td>${esc(r.position)}</td><td class="number">${fmtRate(r.budgetRate)}</td><td class="number">${fmtRate(r.contractRate)}</td><td class="number">${fmtRate(r.totalRate)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
 }
 function render() {
   document.querySelector('#app').innerHTML=`<div class="shell"><aside class="sidebar"><div class="brand"><div class="mark">К</div><div><strong>Кадры ФПМО</strong><small>Штатное распределение</small></div></div><div class="nav-label">Этапы работы</div>
@@ -174,23 +174,26 @@ async function importPpsFile(event) {
 }
 function parsePpsSheet(sheet) {
   const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
-  const headerIndex=matrix.findIndex(row=>row.some(cell=>/ф\.и\.о\.?\s*преподавателя/i.test(clean(cell))));
+  const ordRow=matrix.findIndex(row=>row.some(cell=>/^ординатура$/i.test(clean(cell))));
+  if(ordRow<0)return [];
+  const ordCol=matrix[ordRow].findIndex(cell=>/^ординатура$/i.test(clean(cell)));
+  const internshipCol=matrix[ordRow].findIndex(cell=>/^интернатура$/i.test(clean(cell)));
+  const headerIndex=matrix.findIndex((row,index)=>Math.abs(index-ordRow)<=3&&row.some(cell=>/(?:ф\.и\.о|фамилия.*сотрудник)/i.test(clean(cell)))&&row.some(cell=>/должност/i.test(clean(cell))));
   if(headerIndex<0)return [];
   const header=matrix[headerIndex].map(clean);
-  const nameCol=header.findIndex(value=>/ф\.и\.о/i.test(value));
+  const nameCol=header.findIndex(value=>/(?:ф\.и\.о|фамилия.*сотрудник)/i.test(value));
   const positionCol=header.findIndex(value=>/должност/i.test(value));
-  let ordRow=-1,ordCol=-1;
-  for(let i=headerIndex+1;i<Math.min(headerIndex+5,matrix.length);i++){const col=matrix[i].findIndex(cell=>/^ординатура$/i.test(clean(cell)));if(col>=0){ordRow=i;ordCol=col;break;}}
-  if(nameCol<0||positionCol<0||ordCol<0)return [];
-  let dataStart=ordRow+1;
-  while(dataStart<matrix.length&&dataStart<=ordRow+3&&!matrix[dataStart].some(cell=>/^бюджет$/i.test(clean(cell))))dataStart++;
-  dataStart++;
+  const rateHeaderIndex=matrix.findIndex((row,index)=>index>=ordRow&&index<=ordRow+3&&/^бюджет$/i.test(clean(row[ordCol])));
+  if(nameCol<0||positionCol<0||rateHeaderIndex<0)return [];
+  const paidEnd=internshipCol>ordCol?internshipCol:ordCol+2;
   const output=[];
-  for(let i=dataStart;i<matrix.length;i++){
+  for(let i=Math.max(headerIndex,rateHeaderIndex)+1;i<matrix.length;i++){
     const row=matrix[i];if(row.some(cell=>/^итого$/i.test(clean(cell))))break;
     const name=clean(row[nameCol]),position=clean(row[positionCol]);
     if(!name||!position)continue;
-    const budgetRate=numeric(row[ordCol]),contractRate=numeric(row[ordCol+1]),totalRate=budgetRate+contractRate;
+    const budgetRate=numeric(row[ordCol]);
+    let contractRate=0;for(let col=ordCol+1;col<paidEnd;col++)contractRate+=numeric(row[col]);
+    const totalRate=budgetRate+contractRate;
     if(totalRate<=0)continue;
     output.push({id:uid(),name,position,budgetRate,contractRate,totalRate});
   }
