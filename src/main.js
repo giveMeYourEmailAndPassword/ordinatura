@@ -127,17 +127,17 @@ function selectField(name,label,value,options) { return `<div class="field"><lab
 async function importFiles(event) {
   const files=[...event.target.files]; if(!files.length)return;
   let imported=[];
-  const sourceNames=new Set();
   for(const file of files) {
     const workbook=XLSX.read(await file.arrayBuffer(),{type:'array'});
-    for(const sheetName of workbook.SheetNames) imported.push(...parseSheet(workbook.Sheets[sheetName],sourceNames));
+    for(const sheetName of workbook.SheetNames) imported.push(...parseSheet(workbook.Sheets[sheetName]));
   }
-  state.rows=state.rows.filter(row=>!sourceNames.has(row.name.toLowerCase()));
   const existing=new Set();
   imported=imported.filter(r=>{const key=`${r.name}|${r.program}|${r.funding}|${r.rate}`.toLowerCase(); if(existing.has(key))return false; existing.add(key); return true;});
-  state.rows.push(...imported); saveRows(); render(); showToast(`Загружено действующих записей — ${imported.length}`); event.target.value='';
+  state.rows=imported;
+  state.search=''; state.department='all'; state.funding='all';
+  saveRows(); render(); showToast(`Список заменен. Загружено действующих записей — ${imported.length}`); event.target.value='';
 }
-function parseSheet(sheet,sourceNames) {
+function parseSheet(sheet) {
   const matrix=XLSX.utils.sheet_to_json(sheet,{header:1,defval:'',raw:false});
   let headerIndex=matrix.findIndex(row=>row.some(cell=>/^(фио|фамилия,? имя)/i.test(clean(cell))));
   if(headerIndex<0)return [];
@@ -153,7 +153,6 @@ function parseSheet(sheet,sourceNames) {
     const row=matrix[i], name=clean(row[nameCol]);
     const department=clean(row[deptCol]), specialty=clean(row[specialtyCol]);
     const validName=name && name.length>=5 && /\s/.test(name) && !/^\d+(?:[.,]\d+)?$/.test(name);
-    if(validName)sourceNames.add(name.toLowerCase());
     if(row.some(cell=>/^уш[её]л$/i.test(clean(cell))))accepting=false;
     if(!accepting || !validName || !department || !specialty || /^итого$/i.test(name) || /^ставки$/i.test(name))continue;
     let funding='contract'; if(bCol>=0&&numeric(row[bCol]))funding='budget'; else if(cisCol>=0&&numeric(row[cisCol]))funding='cis'; else if(kCol>=0&&numeric(row[kCol]))funding='contract';
