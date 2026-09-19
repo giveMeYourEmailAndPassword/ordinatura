@@ -204,7 +204,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
           <span aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-slate-400">⌕</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по ФИО, кафедре, специальности…" className="w-full rounded-xl border border-stone-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10" />
         </label>
-        <SearchSelect ariaLabel="Фильтр по кафедре" title="Кафедры" searchPlaceholder="Введите название кафедры" resetValue="all" resetLabel="Все кафедры" value={department} onChange={setDepartment} options={departmentOptions} />
+        <SearchSelect ariaLabel="Фильтр по кафедре" title="Кафедры" searchPlaceholder="Введите название" resetValue="all" resetLabel="Все кафедры" value={department} onChange={setDepartment} options={departmentOptions} />
         <ZagSelect compact ariaLabel="Фильтр по году" value={year} onChange={setYear} options={yearOptions} />
         <ZagSelect compact ariaLabel="Фильтр по источнику финансирования" value={funding} onChange={setFunding} options={fundingOptions} />
       </section>
