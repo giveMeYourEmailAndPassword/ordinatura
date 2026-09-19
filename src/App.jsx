@@ -237,14 +237,56 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
 }
 
 function PpsView({ rows, setRows, confirmAction }) {
-  const summary = useMemo(() => ppsTotals(rows), [rows])
-  const groups = useMemo(() => ppsGroups(rows), [rows])
+  const [search, setSearch] = useState('')
+  const [department, setDepartment] = useState('all')
+  const [position, setPosition] = useState('all')
+  const [source, setSource] = useState('all')
+
+  const departments = useMemo(() => [...new Set(rows.map((row) => row.department).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru')), [rows])
+  const departmentOptions = useMemo(() => [{ label: 'Все кафедры', value: 'all' }, ...departments.map((value) => ({ label: value, value }))], [departments])
+  const positionOptions = useMemo(() => {
+    const grouped = new Map()
+    for (const row of rows) {
+      if (!row.position) continue
+      grouped.set(row.position, [...(grouped.get(row.position) ?? []), row])
+    }
+    const hint = (list) => {
+      const scoped = ppsTotals(list)
+      return `${scoped.people} чел. · ${fmtRate(scoped.all)} ст.`
+    }
+    return [
+      { label: 'Все должности', value: 'all', hint: hint(rows) },
+      ...[...grouped.keys()].sort((a, b) => a.localeCompare(b, 'ru')).map((value) => ({ label: value, value, hint: hint(grouped.get(value)) })),
+    ]
+  }, [rows])
+  const sourceOptions = useMemo(() => [
+    { label: 'Все источники', value: 'all' },
+    { label: 'Бюджет', value: 'budget' },
+    { label: 'Контракт / ИГ', value: 'contract' },
+  ], [])
+
+  const scopedRows = useMemo(() => {
+    const query = search.trim().toLowerCase()
+    return rows.filter((row) => {
+      const found = !query || [row.name, row.position].join(' ').toLowerCase().includes(query)
+      return found
+        && (department === 'all' || row.department === department)
+        && (position === 'all' || row.position === position)
+    })
+  }, [rows, search, department, position])
+  const visibleRows = useMemo(
+    () => scopedRows.filter((row) => source === 'all' || (source === 'budget' ? row.budgetRate > 0 : row.contractRate > 0)),
+    [scopedRows, source],
+  )
+  const summary = useMemo(() => ppsTotals(visibleRows), [visibleRows])
+  const groups = useMemo(() => ppsGroups(visibleRows), [visibleRows])
   const importPps = async ([file]) => {
     if (!file) return
     try {
       const imported = await importPpsWorkbook(file)
       setRows(imported)
       savePpsRows(imported)
+      setSearch(''); setDepartment('all'); setPosition('all'); setSource('all')
       notify(`ППС: загружено ${imported.length} сотрудников, ${fmtRate(ppsTotals(imported).all)} ставок ординатуры`)
     } catch (error) {
       notify('Не удалось прочитать штатное расписание', 'error', error.message)
@@ -254,7 +296,7 @@ function PpsView({ rows, setRows, confirmAction }) {
   return (
     <>
       <header className="mb-7 flex flex-wrap items-end justify-between gap-4">
-        <div><h1 className="font-serif text-4xl text-emerald-950">Формирование ППС</h1><p className="mt-1 text-sm text-slate-500">Этап 2 · только ставки ординатуры, без интернатуры</p></div>
+        <div><h1 className="font-serif text-4xl text-emerald-950">Формирование ППС</h1><p className="mt-1 text-sm text-slate-500">Этап 2 · только ставки ординатуры, без интернатуры</p>{departments.length > 0 && <p className="mt-2 text-xs font-extrabold uppercase tracking-wide text-emerald-800">{departments.length > 1 ? 'Кафедры' : 'Кафедра'}: {departments.join(', ')}</p>}</div>
         <div className="flex gap-2">
           <ExcelUpload onFiles={importPps} primary>{rows.length ? 'Заменить Excel ППС' : 'Импортировать Excel ППС'}</ExcelUpload>
           {rows.length > 0 && <button type="button" className={dangerButtonClass} onClick={() => confirmAction({ title: 'Очистить данные ППС?', description: 'Импортированные сотрудники и ставки ППС будут удалены.', onConfirm: () => { localStorage.removeItem(PPS_STORAGE_KEY); setRows([]); notify('Данные ППС очищены') } })}>Очистить ППС</button>}
@@ -266,15 +308,24 @@ function PpsView({ rows, setRows, confirmAction }) {
         <Card label="Контракт / ИГ ординатуры" value={fmtRate(summary.contract)} hint="ставок" accent="contract" />
         <Card label="Всего по ординатуре" value={fmtRate(summary.all)} hint="бюджет + контракт / ИГ" />
       </section>
-      <h2 className="mb-3 mt-7 text-lg font-extrabold text-emerald-950">Ставки по должностям</h2>
+      <section className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-white p-3">
+        <label className="relative min-w-64 flex-1">
+          <span aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-slate-400">⌕</span>
+          <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по ФИО, должности…" className="w-full rounded-xl border border-stone-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10" />
+        </label>
+        <SearchSelect ariaLabel="Фильтр по кафедре" title="Кафедры" searchPlaceholder="Введите название" resetValue="all" resetLabel="Все кафедры" value={department} onChange={setDepartment} options={departmentOptions} />
+        <SearchSelect ariaLabel="Фильтр по должности" title="Должности" searchPlaceholder="Введите должность" resetValue="all" resetLabel="Все должности" value={position} onChange={setPosition} options={positionOptions} />
+        <ZagSelect compact ariaLabel="Фильтр по источнику" value={source} onChange={setSource} options={sourceOptions} />
+      </section>
+      <h2 className="mb-3 text-lg font-extrabold text-emerald-950">Ставки по должностям</h2>
       <TableFrame className="rounded-2xl">
         {groups.length ? (
           <table className="min-w-[760px] w-full border-collapse"><thead><tr>{['Должность', 'Сотрудников', 'Бюджет', 'Контракт / ИГ', 'Всего ставок'].map((heading) => <th key={heading} className={tableHeadClass}>{heading}</th>)}</tr></thead><tbody>{groups.map((group) => <tr key={group.position} className="hover:bg-stone-50"><td className={`${tableCellClass} font-bold text-slate-900`}>{group.position}</td><td className={tableCellClass}>{group.people}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(group.budget)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(group.contract)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(group.total)}</td></tr>)}</tbody></table>
-        ) : <EmptyState title="Данные ППС не загружены">Импортируйте штатное расписание кафедры.</EmptyState>}
+        ) : <EmptyState title={rows.length ? 'Ничего не найдено' : 'Данные ППС не загружены'}>{rows.length ? 'Измените фильтры или поисковый запрос.' : 'Импортируйте штатное расписание кафедры.'}</EmptyState>}
       </TableFrame>
-      {rows.length > 0 && (
-        <><h2 className="mb-3 mt-7 text-lg font-extrabold text-emerald-950">Сотрудники ППС</h2><TableFrame className="rounded-2xl"><table className="min-w-[900px] w-full border-collapse"><thead><tr>{['№', 'ФИО', 'Должность', 'Бюджет ординатуры', 'Контракт / ИГ ординатуры', 'Всего'].map((heading) => <th key={heading} className={tableHeadClass}>{heading}</th>)}</tr></thead><tbody>{rows.map((row, index) => <tr key={row.id} className="hover:bg-stone-50"><td className={`${tableCellClass} text-slate-400`}>{index + 1}</td><td className={`${tableCellClass} font-bold text-slate-900`}>{row.name}</td><td className={tableCellClass}>{row.position}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.budgetRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.contractRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.totalRate)}</td></tr>)}</tbody></table></TableFrame></>
-      )}
+      {rows.length > 0 && (visibleRows.length ? (
+        <><h2 className="mb-3 mt-7 text-lg font-extrabold text-emerald-950">Сотрудники ППС</h2><TableFrame className="rounded-2xl"><table className="min-w-[900px] w-full border-collapse"><thead><tr>{['№', 'ФИО', 'Должность', 'Бюджет ординатуры', 'Контракт / ИГ ординатуры', 'Всего'].map((heading) => <th key={heading} className={tableHeadClass}>{heading}</th>)}</tr></thead><tbody>{visibleRows.map((row, index) => <tr key={row.id} className="hover:bg-stone-50"><td className={`${tableCellClass} text-slate-400`}>{index + 1}</td><td className={`${tableCellClass} font-bold text-slate-900`}>{row.name}</td><td className={tableCellClass}>{row.position}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.budgetRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.contractRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.totalRate)}</td></tr>)}</tbody></table></TableFrame></>
+      ) : <EmptyState title="Ничего не найдено">Измените фильтры или поисковый запрос.</EmptyState>)}
     </>
   )
 }

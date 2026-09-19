@@ -53,7 +53,9 @@ export function SearchSelect({
     selectionBehavior: 'clear',
     allowCustomValue: false,
     closeOnSelect: true,
-    positioning: { placement: 'bottom-start' },
+    // sameWidth по умолчанию у комбобокса равен true: позиционер получал ширину триггера,
+    // и сдвиг у края окна не срабатывал — широкий список уезжал за экран
+    positioning: { placement: 'bottom-start', sameWidth: false },
     onInputValueChange: ({ inputValue }) => setQuery(inputValue),
     onOpenChange: ({ open: next }) => { setOpen(next); setQuery('') },
     onValueChange: ({ value: next }) => onChange(next[0] ?? resetValue ?? value),

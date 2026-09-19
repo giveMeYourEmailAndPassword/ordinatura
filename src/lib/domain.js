@@ -9,6 +9,35 @@ export function clean(value) {
   return String(value ?? '').replace(/\s+/g, ' ').trim()
 }
 
+// должности в выписках кафедр пишут сокращённо («доц», «асс»), в интерфейсе показываем полностью
+const POSITIONS = [
+  [/^и\.?\s*о\.?\s*зав\.?\s*каф(?:едрой)?\.?$/i, 'И.о. заведующего кафедрой'],
+  [/^зав\.?\s*каф(?:едрой)?\.?$/i, 'Заведующий кафедрой'],
+  [/^и\.?\s*о\.?\s*доц(?:ента)?\.?$/i, 'И.о. доцента'],
+  [/^проф(?:ессор)?\.?$/i, 'Профессор'],
+  [/^доц(?:ент)?\.?$/i, 'Доцент'],
+  [/^асс(?:истент)?\.?$/i, 'Ассистент'],
+  [/^ст\.?\s*преп(?:одаватель)?\.?$/i, 'Старший преподаватель'],
+  [/^преп(?:одаватель)?\.?$/i, 'Преподаватель'],
+  [/^завуч\.?$/i, 'Заведующий учебной частью'],
+  [/^старший\s+лаборант$/i, 'Старший лаборант'],
+  [/^лаборант$/i, 'Лаборант'],
+]
+
+export function fullPosition(value) {
+  const raw = clean(value)
+  if (!raw) return ''
+  return raw
+    .split(',')
+    .map(clean)
+    .filter(Boolean)
+    .map((part, index) => {
+      const full = POSITIONS.find(([pattern]) => pattern.test(part))?.[1] ?? part
+      return index === 0 ? full : full.charAt(0).toLowerCase() + full.slice(1)
+    })
+    .join(', ')
+}
+
 export function numeric(value) {
   if (typeof value === 'number') return value
   const parsed = Number(String(value ?? '').replace(',', '.').replace(/[^\d.-]/g, ''))
@@ -45,6 +74,7 @@ export function loadRows() {
 }
 
 export const loadPpsRows = () => loadJson(PPS_STORAGE_KEY)
+  .map((row) => ({ ...row, department: clean(row.department), position: fullPosition(row.position) }))
 export const loadSpecialtyRows = () => loadJson(SPECIALTY_STORAGE_KEY)
 export const saveRows = (rows) => localStorage.setItem(STORAGE_KEY, JSON.stringify(rows))
 export const savePpsRows = (rows) => localStorage.setItem(PPS_STORAGE_KEY, JSON.stringify(rows))
@@ -125,6 +155,10 @@ export function parseSpecialtySheet(sheet) {
 
 export function parsePpsSheet(sheet) {
   const matrix = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', raw: false })
+  // кафедра указана в шапке выписки: «Кафедра: Хирургии общей практики»
+  const department = matrix.slice(0, 12).flat().map(clean)
+    .map((cell) => cell.match(/кафедр[аы]?\s*[:\-–]\s*(.+)$/i)?.[1])
+    .find(Boolean) ?? ''
   const ordRow = matrix.findIndex((row) => row.some((cell) => /^ординатура$/i.test(clean(cell))))
   if (ordRow < 0) return []
   const ordCol = matrix[ordRow].findIndex((cell) => /^ординатура$/i.test(clean(cell)))
@@ -155,7 +189,7 @@ export function parsePpsSheet(sheet) {
     for (let col = ordCol + 1; col < paidEnd; col += 1) contractRate += numeric(row[col])
     const totalRate = budgetRate + contractRate
     if (totalRate <= 0) continue
-    output.push({ id: uid(), name, position, budgetRate, contractRate, totalRate })
+    output.push({ id: uid(), name, position: fullPosition(position), department, budgetRate, contractRate, totalRate })
   }
   return output
 }
