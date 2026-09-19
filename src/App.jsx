@@ -202,7 +202,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
               <tr key={row.id} className="hover:bg-stone-50">
                 <td className={`${tableCellClass} text-slate-400`}>{index + 1}</td>
                 <td className={tableCellClass}><div className="font-bold text-slate-900">{row.name}</div>{row.degree && <div className="text-slate-400">{row.degree}</div>}</td>
-                <td className={tableCellClass}>{row.studyYear || 'Не определён'}</td>
+                <td className={`${tableCellClass} min-w-28 whitespace-nowrap`}>{row.studyYear || 'Не определён'}</td>
                 <td className={tableCellClass}>{row.specialty || row.position || '—'}</td>
                 <td className={tableCellClass}>{row.department || '—'}</td>
                 <td className={tableCellClass}><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${row.funding === 'budget' ? 'bg-emerald-50 text-emerald-800' : row.funding === 'cis' ? 'bg-violet-50 text-violet-800' : 'bg-amber-50 text-amber-800'}`}>{FUNDING[row.funding] || 'Не указан'}</span></td>
