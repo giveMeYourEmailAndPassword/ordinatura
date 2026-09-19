@@ -145,7 +145,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
     })
   }, [rows, search, department, year])
   const visibleRows = useMemo(() => scopedRows.filter((row) => funding === 'all' || row.funding === funding), [scopedRows, funding])
-  const summary = useMemo(() => totals(scopedRows), [scopedRows])
+  const summary = useMemo(() => totals(visibleRows), [visibleRows])
 
   const importStudents = async (files) => {
     try {
