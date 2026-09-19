@@ -1,4 +1,4 @@
-import { useId, useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { Portal, normalizeProps, useMachine } from '@zag-js/react'
 import * as combobox from '@zag-js/combobox'
 import { Chevron } from './Chevron'
@@ -29,6 +29,7 @@ export function SearchSelect({
   searchPlaceholder = 'Найти…',
 }) {
   const id = useId()
+  const inputRef = useRef(null)
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const selected = options.find((option) => option.value === value)
@@ -55,19 +56,22 @@ export function SearchSelect({
     closeOnSelect: true,
     positioning: { placement: 'bottom-start' },
     onInputValueChange: ({ inputValue }) => setQuery(inputValue),
-    onOpenChange: ({ open: next }) => { setOpen(next); setQuery('') },
+    // набор текста открывает список, и запрос нужно сохранить; при клике/стрелках поле очищается под поиск
+    onOpenChange: ({ open: next, reason }) => { setOpen(next); if (!next || reason !== 'input-change') setQuery('') },
     onValueChange: ({ value: next }) => onChange(next[0] ?? resetValue ?? value),
   })
   const api = combobox.connect(service, normalizeProps)
+  const inputProps = api.getInputProps()
 
   return (
     <div {...api.getRootProps()}>
       <div {...api.getControlProps()} className="relative min-w-44">
         <input
-          {...api.getInputProps()}
+          {...inputProps}
+          ref={inputRef}
           aria-label={ariaLabel}
-          // список открывается на фокус, поэтому поиск всегда начинается с пустого поля
-          onFocus={() => { setQuery(''); api.setOpen(true) }}
+          // своё поведение добавляем к обработчику zag: выделяем значение, чтобы набор заменял его
+          onFocus={(event) => { inputProps.onFocus?.(event); inputRef.current?.select() }}
           placeholder={open ? searchPlaceholder : (selectedLabel ? undefined : placeholder)}
           className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-3 pr-18 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-emerald-800/40 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10"
         />
