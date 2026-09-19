@@ -1,6 +1,7 @@
 import { useId, useMemo } from 'react'
 import { Portal, normalizeProps, useMachine } from '@zag-js/react'
 import * as select from '@zag-js/select'
+import { Chevron } from './Chevron'
 
 export function ZagSelect({ label, ariaLabel, value, onChange, options, name, compact = false }) {
   const id = useId()
@@ -25,7 +26,7 @@ export function ZagSelect({ label, ariaLabel, value, onChange, options, name, co
           className="flex w-full min-w-40 items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 outline-none transition hover:border-emerald-800/40 focus-visible:ring-4 focus-visible:ring-emerald-800/10"
         >
           <span {...api.getValueTextProps()}>{api.valueAsString}</span>
-          <span aria-hidden className={`text-xs text-slate-400 transition ${api.open ? 'rotate-180' : ''}`}>⌄</span>
+          <Chevron open={api.open} />
         </button>
       </div>
       <select {...api.getHiddenSelectProps()} name={name} />

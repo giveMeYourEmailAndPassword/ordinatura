@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from 'react'
 import { Portal, normalizeProps, useMachine } from '@zag-js/react'
 import * as combobox from '@zag-js/combobox'
+import { Chevron } from './Chevron'
 
 const fold = (value) => String(value ?? '').toLowerCase().replace(/ё/g, 'е')
 
@@ -68,13 +69,13 @@ export function SearchSelect({
           // список открывается на фокус, поэтому поиск всегда начинается с пустого поля
           onFocus={() => { setQuery(''); api.setOpen(true) }}
           placeholder={open ? searchPlaceholder : (selectedLabel ? undefined : placeholder)}
-          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-3 pr-16 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-emerald-800/40 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10"
+          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-3 pr-18 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-emerald-800/40 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10"
         />
         {value !== resetValue && (
-          <button {...api.getClearTriggerProps()} type="button" aria-label="Сбросить выбор" className="absolute inset-y-0 right-8 grid w-6 place-items-center text-base text-slate-400 transition hover:text-slate-700">×</button>
+          <button {...api.getClearTriggerProps()} type="button" aria-label="Сбросить выбор" className="absolute inset-y-0 right-10 grid w-6 place-items-center text-base text-slate-400 transition hover:text-slate-700">×</button>
         )}
-        <button {...api.getTriggerProps()} type="button" className="absolute inset-y-0 right-2 grid w-6 place-items-center">
-          <span aria-hidden className={`text-xs text-slate-400 transition ${api.open ? 'rotate-180' : ''}`}>⌄</span>
+        <button {...api.getTriggerProps()} type="button" className="absolute inset-y-0 right-1.5 grid w-8 place-items-center">
+          <Chevron open={api.open} />
         </button>
       </div>
 
