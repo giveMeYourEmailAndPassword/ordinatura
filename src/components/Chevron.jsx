@@ -1,4 +1,4 @@
-export function Chevron({ open = false, className = 'size-5' }) {
+export function Chevron({ open = false, className = 'size-4' }) {
   return (
     <svg
       viewBox="0 0 20 20"
