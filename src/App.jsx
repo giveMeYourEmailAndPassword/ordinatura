@@ -196,7 +196,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
       </section>
       <TableFrame>
         {visibleRows.length ? (
-          <table className="min-w-[1080px] w-full border-collapse">
+          <table className="min-w-[min(1080px,100%)] w-full border-collapse">
             <thead><tr>{['№', 'ФИО', 'Год', 'Специальность', 'Кафедра', 'Источник', 'Телефон', ''].map((heading, index) => <th key={`${heading}-${index}`} className={heading === 'Источник' || heading === 'Телефон' ? `${tableHeadClass} pl-12` : tableHeadClass}>{heading}</th>)}</tr></thead>
             <tbody>{visibleRows.map((row, index) => (
               <tr key={row.id} className="hover:bg-stone-50">
