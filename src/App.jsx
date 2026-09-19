@@ -305,7 +305,7 @@ export default function App() {
   return (
     <div {...tabApi.getRootProps()} className="min-h-screen bg-stone-100 text-slate-900">
       <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col bg-emerald-950 px-5 py-7 text-white">
-        <div className="mb-9 flex items-center gap-3 px-2"><div className="grid size-11 place-items-center rounded-xl bg-amber-400 font-serif text-xl text-emerald-950">К</div><div><strong className="block">Кадры ФПМО</strong><small className="text-[11px] text-white/55">Штатное распределение</small></div></div>
+        <div className="mb-9 flex items-center gap-3 px-2"><div className="grid size-11 place-items-center rounded-xl bg-amber-400 font-serif text-xl text-emerald-950">К</div><div><strong className="block">Кадры ФПМО</strong></div></div>
         <div className="mb-2 px-2 text-[10px] uppercase tracking-[.16em] text-white/40">Этапы работы</div>
         <div {...tabApi.getListProps()} className="grid gap-2">
           {[['students', '1', 'Формирование кол-ва ординаторов'], ['pps', '2', 'Формирование ППС']].map(([value, number, label]) => (
