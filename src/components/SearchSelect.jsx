@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Portal, normalizeProps, useMachine } from '@zag-js/react'
 import * as combobox from '@zag-js/combobox'
 import { Chevron } from './Chevron'
@@ -62,7 +62,7 @@ export function SearchSelect({
   const inputProps = api.getInputProps()
 
   // поиск живёт внутри списка: при открытии сразу ставим в него курсор
-  useEffect(() => { if (open) inputRef.current?.focus() }, [open])
+  useLayoutEffect(() => { if (open) inputRef.current?.focus() }, [open])
 
   return (
     <div {...api.getRootProps()}>
@@ -71,7 +71,7 @@ export function SearchSelect({
         type="button"
         aria-label={ariaLabel}
         title={selectedLabel}
-        className="flex w-full min-w-44 max-w-60 items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 outline-none transition hover:border-emerald-800/40 focus-visible:ring-4 focus-visible:ring-emerald-800/10"
+        className="flex w-60 items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 outline-none transition hover:border-emerald-800/40 focus-visible:ring-4 focus-visible:ring-emerald-800/10"
       >
         <span className="truncate">{selectedLabel}</span>
         <Chevron open={api.open} />
