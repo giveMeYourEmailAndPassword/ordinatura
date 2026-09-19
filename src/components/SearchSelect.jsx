@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { Portal, normalizeProps, useMachine } from '@zag-js/react'
 import * as combobox from '@zag-js/combobox'
 import { Chevron } from './Chevron'
@@ -33,7 +33,7 @@ export function SearchSelect({
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const selected = options.find((option) => option.value === value)
-  const selectedLabel = selected?.label ?? ''
+  const selectedLabel = selected?.label ?? placeholder
   const needle = query.trim()
   const filtered = useMemo(() => {
     const folded = fold(needle)
@@ -47,50 +47,55 @@ export function SearchSelect({
     id,
     collection,
     value: [value],
-    // закрытое поле показывает текущий выбор, открытое — поисковый запрос
-    inputValue: open ? query : selectedLabel,
+    inputValue: query,
     open,
-    openOnClick: true,
     inputBehavior: 'autohighlight',
+    selectionBehavior: 'clear',
     allowCustomValue: false,
     closeOnSelect: true,
     positioning: { placement: 'bottom-start' },
     onInputValueChange: ({ inputValue }) => setQuery(inputValue),
-    // набор текста открывает список, и запрос нужно сохранить; при клике/стрелках поле очищается под поиск
-    onOpenChange: ({ open: next, reason }) => { setOpen(next); if (!next || reason !== 'input-change') setQuery('') },
+    onOpenChange: ({ open: next }) => { setOpen(next); setQuery('') },
     onValueChange: ({ value: next }) => onChange(next[0] ?? resetValue ?? value),
   })
   const api = combobox.connect(service, normalizeProps)
   const inputProps = api.getInputProps()
 
+  // поиск живёт внутри списка: при открытии сразу ставим в него курсор
+  useEffect(() => { if (open) inputRef.current?.focus() }, [open])
+
   return (
     <div {...api.getRootProps()}>
-      <div {...api.getControlProps()} className="relative min-w-44">
-        <input
-          {...inputProps}
-          ref={inputRef}
-          aria-label={ariaLabel}
-          // своё поведение добавляем к обработчику zag: выделяем значение, чтобы набор заменял его
-          onFocus={(event) => { inputProps.onFocus?.(event); inputRef.current?.select() }}
-          placeholder={open ? searchPlaceholder : (selectedLabel ? undefined : placeholder)}
-          className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-3 pr-18 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-emerald-800/40 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10"
-        />
-        {value !== resetValue && (
-          <button {...api.getClearTriggerProps()} type="button" aria-label="Сбросить выбор" className="absolute inset-y-0 right-10 grid w-6 place-items-center text-base text-slate-400 transition hover:text-slate-700">×</button>
-        )}
-        <button {...api.getTriggerProps()} type="button" className="absolute inset-y-0 right-1.5 grid w-8 place-items-center">
-          <Chevron open={api.open} />
-        </button>
-      </div>
+      <button
+        {...api.getTriggerProps()}
+        type="button"
+        aria-label={ariaLabel}
+        title={selectedLabel}
+        className="flex w-full min-w-44 max-w-60 items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-left text-sm text-slate-700 outline-none transition hover:border-emerald-800/40 focus-visible:ring-4 focus-visible:ring-emerald-800/10"
+      >
+        <span className="truncate">{selectedLabel}</span>
+        <Chevron open={api.open} />
+      </button>
 
       <Portal>
         <div {...api.getPositionerProps()}>
           <div {...api.getContentProps()} className="z-[80] w-[min(30rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl outline-none">
-            <div className="flex items-center justify-between gap-3 border-b border-stone-100 bg-stone-50 px-4 py-2.5">
-              <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{title}</span>
-              <span className="text-[11px] font-bold tabular-nums text-slate-400">{needle ? `${filtered.length} из ${options.length}` : options.length}</span>
+            <div className="border-b border-stone-100 bg-stone-50 p-2.5">
+              <div className="relative">
+                <input
+                  {...inputProps}
+                  ref={inputRef}
+                  aria-label={ariaLabel}
+                  placeholder={searchPlaceholder}
+                  className="w-full rounded-xl border border-stone-200 bg-white py-2 pl-3 pr-9 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10"
+                />
+                {needle && (
+                  <button type="button" aria-label="Очистить поиск" onClick={() => api.setInputValue('')} className="absolute inset-y-0 right-1 grid w-6 place-items-center text-base text-slate-400 transition hover:text-slate-700">×</button>
+                )}
+              </div>
             </div>
-            <ul {...api.getListProps()} className="max-h-[21rem] overflow-auto p-1.5">
+
+            <ul {...api.getListProps()} aria-label={title} className="max-h-[21rem] overflow-auto p-1.5">
               {filtered.map((item) => (
                 <li
                   key={item.value}
@@ -108,8 +113,9 @@ export function SearchSelect({
               ))}
               {filtered.length === 0 && <li><p className="px-4 py-8 text-center text-sm text-slate-500">Ничего не найдено{needle ? ` по «${needle}»` : ''}</p></li>}
             </ul>
+
             <div className="flex items-center justify-between gap-3 border-t border-stone-100 px-4 py-2 text-[11px] text-slate-400">
-              <span>↑ ↓ выбрать · Enter подтвердить · Esc закрыть</span>
+              <span className="tabular-nums">{needle ? `Найдено: ${filtered.length} из ${options.length}` : `Всего: ${options.length}`} · ↑ ↓ · Enter · Esc</span>
               {resetValue !== undefined && value !== resetValue && (
                 <button type="button" onClick={() => { api.setValue([resetValue]); setQuery('') }} className="font-extrabold text-emerald-800 hover:underline">{resetLabel}</button>
               )}
