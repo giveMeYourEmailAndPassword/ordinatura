@@ -37,16 +37,24 @@ function notify(title, type = 'success', description) {
   toaster.create({ title, description, type, closable: true })
 }
 
+const statLabelClass = 'text-[11px] font-extrabold uppercase tracking-wide text-slate-500'
+const statValueClass = 'mt-2.5 text-4xl font-extrabold leading-none tabular-nums text-emerald-950'
+const statHintClass = 'mt-1.5 text-[11px] text-slate-400'
+
+function Stat({ label, value, hint }) {
+  return (
+    <div>
+      <div className={statLabelClass}>{label}</div>
+      <div className={statValueClass}>{value}</div>
+      <div className={statHintClass}>{hint}</div>
+    </div>
+  )
+}
+
 function Card({ label, value, hint, accent, children }) {
   return (
     <article className={`rounded-2xl border border-stone-200 bg-white p-5 shadow-sm ${accent === 'budget' ? 'border-t-[3px] border-t-emerald-600' : accent === 'contract' ? 'border-t-[3px] border-t-amber-400' : ''}`}>
-      {children || (
-        <>
-          <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{label}</div>
-          <div className="mt-2 text-4xl font-extrabold tabular-nums text-emerald-950">{value}</div>
-          <div className="mt-1 text-[11px] text-slate-400">{hint}</div>
-        </>
-      )}
+      {children || <Stat label={label} value={value} hint={hint} />}
     </article>
   )
 }
@@ -54,15 +62,10 @@ function Card({ label, value, hint, accent, children }) {
 function RateCard({ label, count, rate, accent }) {
   return (
     <Card accent={accent}>
-      <div className="flex items-center justify-between gap-5">
-        <div>
-          <div className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{label}</div>
-          <div className="mt-2 text-lg font-extrabold text-slate-800">{count} человек</div>
-        </div>
-        <div className="grid min-w-32 border-l border-stone-200 pl-5">
-          <span className="text-[9px] font-extrabold uppercase tracking-widest text-slate-500">Ставка</span>
-          <strong className="text-3xl leading-tight text-emerald-950">{fmtRate(rate)}</strong>
-          <small className="text-[10px] text-slate-400">{count} ÷ 4</small>
+      <div className="grid grid-cols-2">
+        <Stat label={label} value={count} hint="человек" />
+        <div className="border-l border-stone-200 pl-5">
+          <Stat label="Ставка" value={fmtRate(rate)} hint={`${count} ÷ 4`} />
         </div>
       </div>
     </Card>
@@ -201,7 +204,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
 
       <section className="flex flex-wrap items-center gap-2 rounded-t-2xl border border-b-0 border-stone-200 bg-white p-3">
         <label className="relative min-w-64 flex-1">
-          <span aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-slate-400">⌕</span>
+          <svg aria-hidden viewBox="0 0 20 20" fill="none" className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400"><circle cx="8" cy="8" r="5.25" stroke="currentColor" strokeWidth="2" /><path d="M11.71 11.71 15.75 15.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по ФИО, кафедре, специальности…" className="w-full rounded-xl border border-stone-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10" />
         </label>
         <SearchSelect ariaLabel="Фильтр по кафедре" title="Кафедры" searchPlaceholder="Введите название" resetValue="all" resetLabel="Все кафедры" value={department} onChange={setDepartment} options={departmentOptions} />
