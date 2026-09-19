@@ -194,7 +194,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
       </header>
 
       <section className="mb-5 grid gap-3 lg:grid-cols-[.72fr_1.35fr_1.35fr]">
-        <Card label="Общий итог" value={summary.people} hint="ординаторов в выбранном списке" />
+        <Card label="Общий итог" value={summary.people} hint="ординаторов" />
         <RateCard label="Бюджет" count={summary.budget} rate={summary.budgetRate} accent="budget" />
         <RateCard label="Контракт" count={summary.contract} rate={summary.contractRate} accent="contract" />
       </section>
