@@ -26,6 +26,7 @@ import { ConfirmDialog, PersonDialog } from './components/Dialogs'
 import { ExcelUpload } from './components/ExcelUpload'
 import { ToastRegion, toaster } from './components/ToastRegion'
 import { ZagSelect } from './components/ZagSelect'
+import { SearchSelect } from './components/SearchSelect'
 
 const buttonClass = 'rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition hover:border-emerald-800/30 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-800/10'
 const dangerButtonClass = `${buttonClass} text-red-700 hover:border-red-300 hover:bg-red-50`
@@ -115,9 +116,22 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
   const [department, setDepartment] = useState('all')
   const [year, setYear] = useState('all')
 
-  const departments = useMemo(() => [...new Set(rows.map((row) => row.department).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ru')), [rows])
+  const departmentOptions = useMemo(() => {
+    const grouped = new Map()
+    for (const row of rows) {
+      if (!row.department) continue
+      grouped.set(row.department, [...(grouped.get(row.department) ?? []), row])
+    }
+    const hint = (list) => {
+      const scoped = totals(list)
+      return `${scoped.people} чел. · ${fmtRate(scoped.budgetRate + scoped.contractRate)} ст.`
+    }
+    return [
+      { label: 'Все кафедры', value: 'all', hint: hint(rows) },
+      ...[...grouped.keys()].sort((a, b) => a.localeCompare(b, 'ru')).map((value) => ({ label: value, value, hint: hint(grouped.get(value)) })),
+    ]
+  }, [rows])
   const years = useMemo(() => [...new Set(rows.map((row) => row.studyYear || 'Не определён'))].sort((a, b) => a.localeCompare(b, 'ru')), [rows])
-  const departmentOptions = useMemo(() => [{ label: 'Все кафедры', value: 'all' }, ...departments.map((value) => ({ label: value, value }))], [departments])
   const yearOptions = useMemo(() => [{ label: 'Все годы', value: 'all' }, ...years.map((value) => ({ label: value, value }))], [years])
   const fundingOptions = useMemo(() => [{ label: 'Все источники', value: 'all' }, ...Object.entries(FUNDING).map(([value, label]) => ({ label, value }))], [])
   const scopedRows = useMemo(() => {
@@ -190,7 +204,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
           <span aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-slate-400">⌕</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по ФИО, кафедре, специальности…" className="w-full rounded-xl border border-stone-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10" />
         </label>
-        <ZagSelect compact ariaLabel="Фильтр по кафедре" value={department} onChange={setDepartment} options={departmentOptions} />
+        <SearchSelect ariaLabel="Фильтр по кафедре" title="Кафедры" searchPlaceholder="Найти кафедру…" resetValue="all" resetLabel="Все кафедры" value={department} onChange={setDepartment} options={departmentOptions} />
         <ZagSelect compact ariaLabel="Фильтр по году" value={year} onChange={setYear} options={yearOptions} />
         <ZagSelect compact ariaLabel="Фильтр по источнику финансирования" value={funding} onChange={setFunding} options={fundingOptions} />
       </section>

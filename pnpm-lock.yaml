@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@zag-js/combobox':
+        specifier: 1.44.0
+        version: 1.44.0
       '@zag-js/dialog':
         specifier: ^1.44.0
         version: 1.44.0
@@ -587,6 +590,9 @@ packages:
   '@zag-js/collection@1.44.0':
     resolution: {integrity: sha512-BmBSYuj+bLQWOpj0pe7E5ulCgSikT7Hr69noc09j9TT8GN3Jf8yfN1houQdKpM61qjlllDSeN3t7j3HQDAJJ8Q==}
 
+  '@zag-js/combobox@1.44.0':
+    resolution: {integrity: sha512-En5S/53CQkvd7TZxuDK9fF7/X0eye/3wIhIcYqdw0301oWyl/eQXZTIs8Rm2XQ7G/qa5CCVQeAdCJoAyJzQzmQ==}
+
   '@zag-js/core@1.44.0':
     resolution: {integrity: sha512-tqDBJeDpDuLfjodk6NetSDZLMy7+r799RcC5oDtVivowfSxfPBSsfh4UxYT/+zXv9RZ0mYG3TzO4yFROPmniIA==}
 
@@ -616,6 +622,9 @@ packages:
 
   '@zag-js/interact-outside@1.44.0':
     resolution: {integrity: sha512-yFX3eHamp82kax65xIYLemXNH8kD9MvXm7lHttnwlp/XZoAgDTR2l+iLJYU6pLZsuSM9GsrnWQrfHaHWBhyNWw==}
+
+  '@zag-js/live-region@1.44.0':
+    resolution: {integrity: sha512-lNvzkp1XimNmY31Gs6mmACFV7w2Dgx8FBooTg9eovznG6pRNMtSivEfoAAc3VHma4GgQY+S074j3wT4S6nXp1w==}
 
   '@zag-js/popper@1.44.0':
     resolution: {integrity: sha512-uSYqdkGlDC/rCQqYecHAfjhASQjziAR2uiFBjceUK9eG8bjua4Ev6vcaFEjrD4EcOKMMosve5mjWfHcHh5lL6A==}
@@ -1381,6 +1390,19 @@ snapshots:
     dependencies:
       '@zag-js/utils': 1.44.0
 
+  '@zag-js/combobox@1.44.0':
+    dependencies:
+      '@zag-js/anatomy': 1.44.0
+      '@zag-js/collection': 1.44.0
+      '@zag-js/core': 1.44.0
+      '@zag-js/dismissable': 1.44.0
+      '@zag-js/dom-query': 1.44.0
+      '@zag-js/focus-visible': 1.44.0
+      '@zag-js/live-region': 1.44.0
+      '@zag-js/popper': 1.44.0
+      '@zag-js/types': 1.44.0
+      '@zag-js/utils': 1.44.0
+
   '@zag-js/core@1.44.0':
     dependencies:
       '@zag-js/dom-query': 1.44.0
@@ -1438,6 +1460,8 @@ snapshots:
     dependencies:
       '@zag-js/dom-query': 1.44.0
       '@zag-js/utils': 1.44.0
+
+  '@zag-js/live-region@1.44.0': {}
 
   '@zag-js/popper@1.44.0':
     dependencies:

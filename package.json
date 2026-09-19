@@ -10,6 +10,7 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@zag-js/combobox": "1.44.0",
     "@zag-js/dialog": "^1.44.0",
     "@zag-js/file-upload": "^1.44.0",
     "@zag-js/react": "^1.44.0",
