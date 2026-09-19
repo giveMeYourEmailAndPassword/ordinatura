@@ -67,7 +67,7 @@ export function SearchSelect({
           aria-label={ariaLabel}
           // список открывается на фокус, поэтому поиск всегда начинается с пустого поля
           onFocus={() => { setQuery(''); api.setOpen(true) }}
-          placeholder={selectedLabel ? undefined : placeholder}
+          placeholder={open ? searchPlaceholder : (selectedLabel ? undefined : placeholder)}
           className="w-full rounded-xl border border-stone-200 bg-white py-2.5 pl-3 pr-16 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 hover:border-emerald-800/40 focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10"
         />
         {value !== resetValue && (
@@ -79,9 +79,9 @@ export function SearchSelect({
       </div>
 
       <Portal>
-        <div {...api.getPositionerProps()} className="z-[80]">
-          <div {...api.getContentProps()} className="w-[min(30rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl outline-none">
-            <div className="flex items-center justify-between gap-3 border-b border-stone-100 bg-stone-50/70 px-4 py-2.5">
+        <div {...api.getPositionerProps()}>
+          <div {...api.getContentProps()} className="z-[80] w-[min(30rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-2xl outline-none">
+            <div className="flex items-center justify-between gap-3 border-b border-stone-100 bg-stone-50 px-4 py-2.5">
               <span className="text-[11px] font-extrabold uppercase tracking-wide text-slate-500">{title}</span>
               <span className="text-[11px] font-bold tabular-nums text-slate-400">{needle ? `${filtered.length} из ${options.length}` : options.length}</span>
             </div>
