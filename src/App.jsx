@@ -1,6 +1,4 @@
-import { useId, useMemo, useState } from 'react'
-import { normalizeProps, useMachine } from '@zag-js/react'
-import * as tabs from '@zag-js/tabs'
+import { useEffect, useMemo, useState } from 'react'
 import {
   FUNDING,
   PPS_STORAGE_KEY,
@@ -308,7 +306,8 @@ function PpsView({ rows, setRows, confirmAction }) {
         <Card label="Контракт / ИГ ординатуры" value={fmtRate(summary.contract)} hint="ставок" accent="contract" />
         <Card label="Всего по ординатуре" value={fmtRate(summary.all)} hint="бюджет + контракт / ИГ" />
       </section>
-      <section className="mb-4 flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200 bg-white p-3">
+      <h2 className="mb-3 text-lg font-extrabold text-emerald-950">Сотрудники ППС</h2>
+      <section className="flex flex-wrap items-center gap-2 rounded-t-2xl border border-b-0 border-stone-200 bg-white p-3">
         <label className="relative min-w-64 flex-1">
           <span aria-hidden className="absolute left-3 top-1/2 -translate-y-1/2 text-xl text-slate-400">⌕</span>
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Поиск по ФИО, должности…" className="w-full rounded-xl border border-stone-200 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-emerald-700 focus:ring-4 focus:ring-emerald-800/10" />
@@ -317,30 +316,48 @@ function PpsView({ rows, setRows, confirmAction }) {
         <SearchSelect ariaLabel="Фильтр по должности" title="Должности" searchPlaceholder="Введите должность" resetValue="all" resetLabel="Все должности" value={position} onChange={setPosition} options={positionOptions} />
         <ZagSelect compact ariaLabel="Фильтр по источнику" value={source} onChange={setSource} options={sourceOptions} />
       </section>
-      <h2 className="mb-3 text-lg font-extrabold text-emerald-950">Ставки по должностям</h2>
+      <TableFrame>
+        {visibleRows.length ? (
+          <table className="min-w-[900px] w-full border-collapse"><thead><tr>{['№', 'ФИО', 'Должность', 'Бюджет ординатуры', 'Контракт / ИГ ординатуры', 'Всего'].map((heading) => <th key={heading} className={tableHeadClass}>{heading}</th>)}</tr></thead><tbody>{visibleRows.map((row, index) => <tr key={row.id} className="hover:bg-stone-50"><td className={`${tableCellClass} text-slate-400`}>{index + 1}</td><td className={`${tableCellClass} font-bold text-slate-900`}>{row.name}</td><td className={tableCellClass}>{row.position}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.budgetRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.contractRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.totalRate)}</td></tr>)}</tbody></table>
+        ) : <EmptyState title={rows.length ? 'Ничего не найдено' : 'Данные ППС не загружены'}>{rows.length ? 'Измените фильтры или поисковый запрос.' : 'Импортируйте штатное расписание кафедры.'}</EmptyState>}
+      </TableFrame>
+      <h2 className="mb-3 mt-7 text-lg font-extrabold text-emerald-950">Ставки по должностям</h2>
       <TableFrame className="rounded-2xl">
         {groups.length ? (
           <table className="min-w-[760px] w-full border-collapse"><thead><tr>{['Должность', 'Сотрудников', 'Бюджет', 'Контракт / ИГ', 'Всего ставок'].map((heading) => <th key={heading} className={tableHeadClass}>{heading}</th>)}</tr></thead><tbody>{groups.map((group) => <tr key={group.position} className="hover:bg-stone-50"><td className={`${tableCellClass} font-bold text-slate-900`}>{group.position}</td><td className={tableCellClass}>{group.people}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(group.budget)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(group.contract)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(group.total)}</td></tr>)}</tbody></table>
         ) : <EmptyState title={rows.length ? 'Ничего не найдено' : 'Данные ППС не загружены'}>{rows.length ? 'Измените фильтры или поисковый запрос.' : 'Импортируйте штатное расписание кафедры.'}</EmptyState>}
       </TableFrame>
-      {rows.length > 0 && (visibleRows.length ? (
-        <><h2 className="mb-3 mt-7 text-lg font-extrabold text-emerald-950">Сотрудники ППС</h2><TableFrame className="rounded-2xl"><table className="min-w-[900px] w-full border-collapse"><thead><tr>{['№', 'ФИО', 'Должность', 'Бюджет ординатуры', 'Контракт / ИГ ординатуры', 'Всего'].map((heading) => <th key={heading} className={tableHeadClass}>{heading}</th>)}</tr></thead><tbody>{visibleRows.map((row, index) => <tr key={row.id} className="hover:bg-stone-50"><td className={`${tableCellClass} text-slate-400`}>{index + 1}</td><td className={`${tableCellClass} font-bold text-slate-900`}>{row.name}</td><td className={tableCellClass}>{row.position}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.budgetRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.contractRate)}</td><td className={`${tableCellClass} font-bold tabular-nums`}>{fmtRate(row.totalRate)}</td></tr>)}</tbody></table></TableFrame></>
-      ) : <EmptyState title="Ничего не найдено">Измените фильтры или поисковый запрос.</EmptyState>)}
     </>
   )
 }
 
+const STAGES = [
+  { value: 'students', path: '/', number: '1', label: 'Формирование кол-ва ординаторов' },
+  { value: 'pps', path: '/pps', number: '2', label: 'Формирование ППС' },
+]
+
+// «/» — ординатура (главный экран), «/pps» — ППС
+const stageFromPath = () => (window.location.pathname.replace(/\/+$/, '').endsWith('/pps') ? 'pps' : 'students')
+
 export default function App() {
-  const tabsId = useId()
-  const [stage, setStage] = useState('students')
+  const [stage, setStage] = useState(stageFromPath)
   const [rows, setRows] = useState(loadRows)
   const [ppsRows, setPpsRows] = useState(loadPpsRows)
   const [specialtyRows, setSpecialtyRows] = useState(loadSpecialtyRows)
   const [editingRow, setEditingRow] = useState(null)
   const [personOpen, setPersonOpen] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', description: '', onConfirm: () => {} })
-  const tabService = useMachine(tabs.machine, { id: tabsId, value: stage, onValueChange: ({ value }) => setStage(value) })
-  const tabApi = tabs.connect(tabService, normalizeProps)
+
+  useEffect(() => {
+    const sync = () => setStage(stageFromPath())
+    window.addEventListener('popstate', sync)
+    return () => window.removeEventListener('popstate', sync)
+  }, [])
+
+  const openStage = (next) => {
+    window.history.pushState({}, '', STAGES.find((item) => item.value === next).path)
+    setStage(next)
+  }
 
   const editPerson = (row) => { setEditingRow(row); setPersonOpen(true) }
   const savePerson = (person) => {
@@ -354,23 +371,29 @@ export default function App() {
   const confirmAction = (details) => setConfirm({ ...details, open: true })
 
   return (
-    <div {...tabApi.getRootProps()} className="min-h-screen bg-stone-100 text-slate-900">
+    <div className="min-h-screen bg-stone-100 text-slate-900">
       <aside className="fixed inset-y-0 left-0 z-30 flex w-60 flex-col bg-emerald-950 px-5 py-7 text-white">
         <div className="mb-9 flex items-center gap-3 px-2"><div className="grid size-11 place-items-center rounded-xl bg-amber-400 font-serif text-xl text-emerald-950">К</div><div><strong className="block">Кадры ФПМО</strong></div></div>
         <div className="mb-2 px-2 text-[10px] uppercase tracking-[.16em] text-white/40">Этапы работы</div>
-        <div {...tabApi.getListProps()} className="grid gap-2">
-          {[['students', '1', 'Формирование кол-ва ординаторов'], ['pps', '2', 'Формирование ППС']].map(([value, number, label]) => (
-            <button key={value} {...tabApi.getTriggerProps({ value })} type="button" className="rounded-xl px-3 py-3 text-left text-sm font-semibold text-white/70 transition data-[selected]:bg-white/10 data-[selected]:text-white"><span className="mr-2">{number}</span>{label}</button>
+        <nav className="grid gap-2">
+          {STAGES.map(({ value, path, number, label }) => (
+            <a
+              key={value}
+              href={path}
+              aria-current={stage === value ? 'page' : undefined}
+              onClick={(event) => { event.preventDefault(); openStage(value) }}
+              className="rounded-xl px-3 py-3 text-left text-sm font-semibold text-white/70 transition hover:bg-white/5 aria-[current=page]:bg-white/10 aria-[current=page]:text-white"
+            >
+              <span className="mr-2">{number}</span>{label}
+            </a>
           ))}
-        </div>
+        </nav>
         <div className="mt-auto rounded-xl bg-white/[.07] p-4 text-xs leading-5 text-white/55">Сначала рассчитайте количество ординаторов, затем сформируйте распределение ППС.</div>
       </aside>
       <main className="ml-60 min-h-screen w-[calc(100%-15rem)] px-6 py-8 xl:px-10">
-        {stage === 'students' ? (
-          <div {...tabApi.getContentProps({ value: 'students' })}><StudentsView rows={rows} specialtyRows={specialtyRows} setRows={setRows} setSpecialtyRows={setSpecialtyRows} onEdit={editPerson} confirmAction={confirmAction} /></div>
-        ) : (
-          <div {...tabApi.getContentProps({ value: 'pps' })}><PpsView rows={ppsRows} setRows={setPpsRows} confirmAction={confirmAction} /></div>
-        )}
+        {stage === 'students'
+          ? <StudentsView rows={rows} specialtyRows={specialtyRows} setRows={setRows} setSpecialtyRows={setSpecialtyRows} onEdit={editPerson} confirmAction={confirmAction} />
+          : <PpsView rows={ppsRows} setRows={setPpsRows} confirmAction={confirmAction} />}
       </main>
       <PersonDialog open={personOpen} row={editingRow} onOpenChange={(open) => { setPersonOpen(open); if (!open) setEditingRow(null) }} onSave={savePerson} />
       <ConfirmDialog open={confirm.open} title={confirm.title} description={confirm.description} onConfirm={confirm.onConfirm} onOpenChange={(open) => setConfirm((current) => ({ ...current, open }))} />

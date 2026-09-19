@@ -11,7 +11,8 @@ UI целиком на русском.
 | UI | React 19 (`StrictMode`), хуки, никакого роутера |
 | Сборка | Vite 7 + `@vitejs/plugin-react` |
 | Стили | Tailwind CSS 4 через `@tailwindcss/vite`; **нет `tailwind.config`** — тема в `@theme` внутри `src/style.css` |
-| Примитивы | Zag.js 1.44: `dialog`, `file-upload`, `select`, `tabs`, `toast`, `combobox` + `@zag-js/react` |
+| Примитивы | Zag.js 1.44: `dialog`, `file-upload`, `select`, `toast`, `combobox` + `@zag-js/react` |
+| Роутинг | свой минимальный: `history.pushState` + `popstate`, `/` — ординатура, `/pps` — ППС |
 | Excel | SheetJS `xlsx` 0.18.5 |
 | Пакеты | pnpm 11 (`packageManager: pnpm@11.9.0`) |
 | Тесты/линт | отсутствуют (нет vitest/jest/eslint/prettier, нет CI) |
@@ -43,7 +44,10 @@ src/style.css                    @import tailwindcss, @theme (Manrope/Prata), ke
 index.html                       <div id="app">, lang="ru"
 ```
 
-Экраны переключаются закладками zag (`stage`: `students` | `pps`); левое меню — фиксированный `aside`.
+Два экрана разведены по путям: **`/` — «Формирование кол-ва ординаторов» (главный), `/pps` — «Формирование ППС»**.
+Работает на `history.pushState`/`popstate` (`STAGES`, `stageFromPath`, `openStage` в `App.jsx`), роутера нет.
+Меню этапов — `<a href>` в фиксированном `aside` с `aria-current="page"`; глубокий заход на `/pps` поддержан
+и dev-сервером Vite (SPA-fallback), и nginx (`try_files … /index.html`).
 
 ## Данные
 
@@ -144,6 +148,9 @@ rows ──поиск+кафедра+год──► scopedRows ──источ
   по `visibleRows`; импортированная кафедра выводится подзаголовком в шапке экрана.
 - Фильтра «год» нет: ППС-выписка не содержит года обучения, а «кафедра» обычно одна — импорт заменяет
   данные целиком (если в хранилище окажутся строки разных кафедр, фильтр заработает сам).
+- Порядок блоков на экране: шапка (с импортированной кафедрой) → карточки → «Сотрудники ППС» с приклеенной
+  панелью фильтров (`rounded-t-2xl border-b-0` + `TableFrame` = `rounded-b-2xl`, как в ординаторах) →
+  «Ставки по должностям». Список сотрудников идёт первым, сводка по должностям — под ним.
 
 ## UI-конвенции
 
