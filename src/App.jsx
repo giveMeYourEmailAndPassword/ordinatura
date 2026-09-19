@@ -206,7 +206,7 @@ function StudentsView({ rows, specialtyRows, setRows, setSpecialtyRows, onEdit, 
                 <td className={tableCellClass}>{row.specialty || row.position || '—'}</td>
                 <td className={tableCellClass}>{row.department || '—'}</td>
                 <td className={`${tableCellClass} pl-12`}><span className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-extrabold ${row.funding === 'budget' ? 'bg-emerald-50 text-emerald-800' : row.funding === 'cis' ? 'bg-violet-50 text-violet-800' : 'bg-amber-50 text-amber-800'}`}>{FUNDING[row.funding] || 'Не указан'}</span></td>
-                <td className={`${tableCellClass} w-[1%] pl-12 whitespace-nowrap`}>{row.phone || '—'}</td>
+                <td className={`${tableCellClass} w-[1%] pl-12`}><span className="block max-w-18 truncate" title={row.phone || undefined}>{row.phone || '—'}</span></td>
                 <td className={`${tableCellClass} w-[1%]`}><div className="flex gap-1"><button type="button" className="size-8 rounded-lg text-slate-500 hover:bg-stone-100" onClick={() => onEdit(row)} aria-label={`Изменить ${row.name}`}>✎</button><button type="button" className="size-8 rounded-lg text-slate-500 hover:bg-red-50 hover:text-red-700" onClick={() => confirmAction({ title: 'Удалить запись?', description: row.name, onConfirm: () => { const next = rows.filter((item) => item.id !== row.id); setRows(next); saveRows(next); notify('Запись удалена') } })} aria-label={`Удалить ${row.name}`}>×</button></div></td>
               </tr>
             ))}</tbody>
